@@ -43,7 +43,7 @@ pub const TypeInfo = union(enum) {
 
         pub fn init(comptime m: std.builtin.Type.Int) Int {
             return comptime .{
-                .signedness = @intToEnum(Signedness, @enumToInt(m.signedness)),
+                .signedness = @as(Signedness, @enumFromInt(@intFromEnum(m.signedness))),
                 .bits = m.bits,
             };
         }
@@ -93,7 +93,7 @@ pub const TypeInfo = union(enum) {
 
         pub fn init(comptime m: std.builtin.Type.Pointer) Pointer {
             return comptime .{
-                .size = @intToEnum(TypeInfo.Pointer.Size, @enumToInt(m.size)),
+                .size = @as(TypeInfo.Pointer.Size, @enumFromInt(@intFromEnum(m.size))),
                 .is_const = m.is_const,
                 .is_volatile = m.is_volatile,
                 .alignment = m.alignment,
@@ -202,11 +202,11 @@ pub const TypeInfo = union(enum) {
         pub fn init(comptime m: std.builtin.Type.Struct, comptime name: []const u8) Struct {
             return comptime .{
                 .name = name,
-                .layout = @intToEnum(TypeInfo.ContainerLayout, @enumToInt(m.layout)),
+                .layout = @as(TypeInfo.ContainerLayout, @enumFromInt(@intFromEnum(m.layout))),
                 .fields = fields: {
                     comptime var arr: [m.fields.len]StructField = undefined;
 
-                    inline for (m.fields) |f, i| {
+                    inline for (m.fields, 0..) |f, i| {
                         arr[i] = StructField.init(f);
                     }
 
@@ -215,7 +215,7 @@ pub const TypeInfo = union(enum) {
                 .decls = decls: {
                     comptime var arr: [m.decls.len]Declaration = undefined;
 
-                    inline for (m.decls) |f, i| {
+                    inline for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
                     }
 
@@ -336,12 +336,12 @@ pub const TypeInfo = union(enum) {
         pub fn init(comptime m: std.builtin.Type.Enum, comptime name: []const u8) Enum {
             return comptime .{
                 .name = name,
-                .layout = @intToEnum(TypeInfo.ContainerLayout, @enumToInt(m.layout)),
+                .layout = @as(TypeInfo.ContainerLayout, @enumFromInt(@intFromEnum(m.layout))),
                 .tag_type = &TypeInfo.init(m.tag_type),
                 .fields = fields: {
                     comptime var arr: [m.fields.len]EnumField = undefined;
 
-                    inline for (m.fields) |f, i| {
+                    inline for (m.fields, 0..) |f, i| {
                         arr[i] = EnumField.init(f);
                     }
 
@@ -350,7 +350,7 @@ pub const TypeInfo = union(enum) {
                 .decls = decls: {
                     comptime var arr: [m.decls.len]Declaration = undefined;
 
-                    inline for (m.decls) |f, i| {
+                    inline for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
                     }
 
@@ -422,12 +422,12 @@ pub const TypeInfo = union(enum) {
         pub fn init(comptime m: std.builtin.Type.Union, comptime name: []const u8) Union {
             return comptime .{
                 .name = name,
-                .layout = @intToEnum(TypeInfo.ContainerLayout, @enumToInt(m.layout)),
+                .layout = @as(TypeInfo.ContainerLayout, @enumFromInt(@intFromEnum(m.layout))),
                 .tag_type = if (m.tag_type) |t| &TypeInfo.init(t) else null,
                 .fields = fields: {
                     comptime var arr: [m.fields.len]UnionField = undefined;
 
-                    inline for (m.fields) |f, i| {
+                    inline for (m.fields, 0..) |f, i| {
                         arr[i] = UnionField.init(f);
                     }
 
@@ -436,7 +436,7 @@ pub const TypeInfo = union(enum) {
                 .decls = decls: {
                     comptime var arr: [m.decls.len]Declaration = undefined;
 
-                    inline for (m.decls) |f, i| {
+                    inline for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
                     }
 
@@ -502,7 +502,7 @@ pub const TypeInfo = union(enum) {
 
         pub fn init(comptime m: std.builtin.Type.Fn) Fn {
             return comptime .{
-                .calling_convention = @intToEnum(CallingConvention, @enumToInt(m.calling_convention)),
+                .calling_convention = @as(CallingConvention, @enumFromInt(@intFromEnum(m.calling_convention))),
                 .alignment = m.alignment,
                 .is_generic = m.is_generic,
                 .is_var_args = m.is_var_args,
@@ -510,7 +510,7 @@ pub const TypeInfo = union(enum) {
                 .args = args: {
                     comptime var arr: [m.args.len]Param = undefined;
 
-                    inline for (m.args) |f, i| {
+                    inline for (m.args, 0..) |f, i| {
                         arr[i] = Param.init(f);
                     }
 
@@ -543,7 +543,7 @@ pub const TypeInfo = union(enum) {
                 .decls = decls: {
                     comptime var arr: [m.decls.len]Declaration = undefined;
 
-                    inline for (m.decls) |f, i| {
+                    inline for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
                     }
 
@@ -705,7 +705,7 @@ pub const TypeInfo = union(enum) {
 
                     comptime var arr: [m.?.len]Error = undefined;
 
-                    inline for (m.?) |f, i| {
+                    inline for (m.?, 0..) |f, i| {
                         arr[i] = .{
                             .name = f.name,
                         };

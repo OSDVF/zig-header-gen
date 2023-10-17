@@ -8,17 +8,31 @@ const warn = std.debug.print;
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
 
-    const mode = b.standardReleaseOptions();
+    const mode = b.standardOptimizeOption(.{});
 
     // HEADER GEN BUILD STEP
-    const exe = b.addExecutable("example", "src/example/exports.zig");
-    exe.main_pkg_path = "src/";
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
-    exe.addPackagePath("header_gen", "src/header_gen.zig");
-    exe.install();
+    const exe = b.addExecutable(.{
+        .name = "example",
+        .root_source_file = .{
+            .path = "src/example/exports.zig",
+        },
+        .main_mod_path = .{
+            .path = "src/",
+        },
+        .target = target,
+        .optimize = mode,
+    });
+    exe.addModule("header_gen", b.addModule(
+        "hedaer_gen",
+        .{
+            .source_file = .{
+                .path = "src/header_gen.zig",
+            },
+        },
+    ));
+    b.installArtifact(exe);
 
-    const run_cmd = exe.run();
+    const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
 
     const run_step = b.step("headergen", "Run the app");

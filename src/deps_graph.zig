@@ -277,7 +277,7 @@ pub fn DepsGraph(comptime T: type) type {
                 _ = dependency_name;
                 var maybe_dep_index: ?usize = null;
 
-                for (self.dependencies.items) |dependency, i| {
+                for (self.dependencies.items, 0..) |dependency, i| {
                     if (dependency.eqlName(dependency)) {
                         maybe_dep_index = i;
                         break;

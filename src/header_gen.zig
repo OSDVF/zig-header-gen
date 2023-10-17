@@ -49,7 +49,7 @@ fn validateGenerator(comptime Generator: type) void {
     }
 }
 
-pub fn HeaderGen(comptime S: type, comptime libname: []const u8) type {
+pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir: []const u8) type {
     comptime var all_decls: []const Declaration = @typeInfo(S).Struct.decls;
 
     return struct {
@@ -66,12 +66,12 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8) type {
             validateGenerator(Generator);
 
             var cwd = std.fs.cwd();
-            cwd.makeDir("headers") catch |e| switch (e) {
+            cwd.makeDir(libdir) catch |e| switch (e) {
                 error.PathAlreadyExists => {},
-                else => @panic("Failed to init header folder"),
+                else => @panic("Failed to init headers folder"),
             };
 
-            var hdr_dir = cwd.openDir("headers", .{}) catch @panic("Failed to open header dir");
+            var hdr_dir = cwd.openDir(libdir, .{}) catch @panic("Failed to open header dir");
             defer hdr_dir.close();
 
             var gen = Generator.init(self.source_file, &hdr_dir);
@@ -121,13 +121,10 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8) type {
 
             // iterate exported fns
             inline for (self.decls) |decl| {
-                if (@typeInfo(S) == .Fn) {
-                    const func = decl.data.Fn;
-                    if (func.is_export) {
-                        //TODO: Look into parsing file for argument names
-                        const fn_meta = @typeInfo(func.fn_type).Fn;
-                        gen.gen_func(decl.name, fn_meta);
-                    }
+                const declType = @typeInfo(@TypeOf(@field(S, decl.name)));
+                if (declType == .Fn) {
+                    const func = declType.Fn;
+                    gen.gen_func(decl.name, func);
                 } else if (@typeInfo(S) == .Type) {
                     const fn_meta = @typeInfo(decl.data.Type);
 
