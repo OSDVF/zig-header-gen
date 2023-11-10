@@ -15,6 +15,7 @@ const Language = enum {
 pub fn C_Generator(comptime lang: Language) type {
     return struct {
         file: std.fs.File,
+        currently_inside_args: bool,
 
         const Self = @This();
 
@@ -22,7 +23,7 @@ pub fn C_Generator(comptime lang: Language) type {
             var file = dst_dir.createFile(comptime filebase(src_file) ++ if (lang == .C) ".h" else ".hpp", .{}) catch
                 @panic("Failed to create header file for source: " ++ src_file);
 
-            var res = Self{ .file = file };
+            var res = Self{ .file = file, .currently_inside_args = false };
 
             // write the header's header, lol
             res.write("#ifndef _" ++ comptime filebase(src_file) ++ "_H\n\n#define _" ++ filebase(src_file) ++ "_H\n");
@@ -45,7 +46,7 @@ pub fn C_Generator(comptime lang: Language) type {
             self.file.close();
         }
 
-        pub fn gen_func(self: *Self, comptime name: []const u8, comptime meta: FnMeta) void {
+        pub fn gen_func(self: *Self, comptime name: []const u8, comptime meta: FnMeta, pointer: bool) void {
             switch (meta.calling_convention) {
                 .Naked => self.write("__attribute__((naked)) "),
                 .Stdcall => self.write("__attribute__((stdcall)) "),
@@ -53,13 +54,17 @@ pub fn C_Generator(comptime lang: Language) type {
                 .Thiscall => self.write("__attribute__((thiscall)) "),
                 else => {},
             }
-            self.write("extern ");
-            if (lang == .Cpp) {
-                self.write("\"C\" ");
+            if (!pointer) {
+                self.write("extern ");
+                if (lang == .Cpp) {
+                    self.write("\"C\" ");
+                }
+                self.writeType(meta.return_type.?);
+                self.write(" ");
             }
-            self.writeType(meta.return_type.?);
-            self.write(" " ++ name ++ "(");
+            self.write(name ++ "(");
 
+            self.currently_inside_args = true;
             inline for (meta.params, 0..) |arg, i| {
                 self.writeType(arg.type.?);
                 //TODO: Figure out how to get arg names; for now just do arg0..argN
@@ -67,8 +72,12 @@ pub fn C_Generator(comptime lang: Language) type {
                 if (i != meta.params.len - 1)
                     self.write(", ");
             }
+            self.currently_inside_args = false;
 
-            self.write(");\n\n");
+            self.write(")");
+            if (!pointer) {
+                self.write(";\n\n");
+            }
         }
 
         pub fn gen_struct(self: *Self, comptime name: []const u8, comptime meta: StructMeta) void {
@@ -82,15 +91,31 @@ pub fn C_Generator(comptime lang: Language) type {
             inline for (meta.fields) |field| {
                 self.write("   ");
 
-                const info = @typeInfo(field.field_type);
-
-                if (info == .Array) {
-                    self.writeType(info.Array.child);
-                } else {
-                    self.writeType(field.field_type);
+                const info = @typeInfo(field.type);
+                if (info == .Fn) {
+                    continue; //skip struct functions
                 }
+                comptime var inner = info;
+                inline while (inner == .Optional or inner == .Pointer) {
+                    if (inner == .Optional) {
+                        inner = @typeInfo(inner.Optional.child);
+                    } else {
+                        inner = @typeInfo(inner.Pointer.child);
+                    }
+                }
+                if (inner == .Fn) {
+                    self.writeType(inner.Fn.return_type.?);
+                    self.write(" (*" ++ field.name ++ ")");
+                    self.writeType(field.type); //writes just arguments
+                } else {
+                    if (info == .Array) {
+                        self.writeType(info.Array.child);
+                    } else {
+                        self.writeType(field.type);
+                    }
 
-                self.write(" " ++ field.name);
+                    self.write(" " ++ field.name);
+                }
 
                 if (info == .Array) {
                     _ = self.file.writer().print("[{}]", .{info.Array.len}) catch unreachable;
@@ -128,7 +153,7 @@ pub fn C_Generator(comptime lang: Language) type {
 
             inline for (meta.fields) |field| {
                 self.write("   ");
-                self.writeType(field.field_type);
+                self.writeType(field.type);
                 self.write(" " ++ field.name ++ ";\n");
             }
             self.write("} " ++ name ++ "_t;\n\n");
@@ -136,6 +161,7 @@ pub fn C_Generator(comptime lang: Language) type {
 
         fn writeType(self: *Self, comptime T: type) void {
             switch (T) {
+                anyopaque => self.write("void"),
                 void => self.write("void"),
                 bool => self.write("bool"),
                 usize => self.write("size_t"),
@@ -168,14 +194,35 @@ pub fn C_Generator(comptime lang: Language) type {
                             const childmeta = @typeInfo(child);
                             if (childmeta == .Struct and childmeta.Struct.layout != .Extern) {
                                 self.write("void");
+                                self.write("*");
                             } else {
-                                self.writeType(child);
+                                if (childmeta == .Fn) {
+                                    self.writeType(child);
+                                } else {
+                                    self.writeType(child);
+                                    self.write("*");
+                                }
                             }
-                            self.write("*");
                         },
                         .Optional => self.writeType(meta.Optional.child),
                         .Array => @compileError("Handle goofy looking C Arrays in the calling function"),
-                        else => self.write(@typeName(T) ++ "_t"),
+                        .Fn => gen_func(self, "", meta.Fn, true),
+                        else => {
+                            const fully_qualified = @typeName(T);
+                            var iterator = std.mem.splitBackwardsScalar(u8, fully_qualified, '.');
+                            var name = iterator.next().?;
+                            if (meta == .Struct) {
+                                if (self.currently_inside_args) {
+                                    self.write("struct ");
+                                    self.write(name);
+                                } else {
+                                    self.write(name);
+                                    self.write("_t");
+                                }
+                            } else {
+                                self.write(name);
+                            }
+                        },
                     }
                 },
             }

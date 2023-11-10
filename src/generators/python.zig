@@ -42,7 +42,8 @@ pub const Python_Generator = struct {
         self.file.close();
     }
 
-    pub fn gen_func(self: *Self, name: []const u8, meta: FnMeta) void {
+    pub fn gen_func(self: *Self, name: []const u8, meta: FnMeta, is_pointer: bool) void {
+        _ = is_pointer;
         self.print("lib.{s}.argtypes = [", .{name});
 
         for (meta.params, 0..) |arg, i| {

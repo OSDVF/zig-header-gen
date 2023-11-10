@@ -47,9 +47,7 @@ fn getTypeName(comptime T: type) []const u8 {
     };
 }
 
-pub const SymbolPhase = enum {
-    Signature, Body, Full
-};
+pub const SymbolPhase = enum { Signature, Body, Full };
 
 pub fn Ordered_Generator(comptime Generator: type) type {
     return struct {
@@ -75,7 +73,7 @@ pub fn Ordered_Generator(comptime Generator: type) type {
             self.flush();
 
             self.symbols.deinit();
-            
+
             self.inner_gen.deinit();
 
             self.emitted_phase.deinit();
@@ -112,12 +110,13 @@ pub fn Ordered_Generator(comptime Generator: type) type {
                     .Struct => |meta| self.inner_gen.gen_struct(emitted.symbol.name, meta, phase),
                     .Union => |meta| self.inner_gen.gen_union(emitted.symbol.name, meta, phase),
                     .Enum => |meta| self.inner_gen.gen_enum(emitted.symbol.name, meta, phase),
-                    .Fn => |meta| self.inner_gen.gen_func(emitted.symbol.name, meta),
+                    .Fn => |meta| self.inner_gen.gen_func(emitted.symbol.name, meta, false),
                 }
             }
         }
 
-        pub fn gen_func(self: *Self, comptime name: []const u8, comptime meta: FnMeta) void {
+        pub fn gen_func(self: *Self, comptime name: []const u8, comptime meta: FnMeta, is_pointer: bool) void {
+            _ = is_pointer;
             const decl: SymbolDeclaration = SymbolDeclaration{
                 .Fn = rt.TypeInfo.Fn.init(meta),
             };

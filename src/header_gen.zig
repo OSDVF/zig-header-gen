@@ -77,60 +77,36 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir
             var gen = Generator.init(self.source_file, &hdr_dir);
             defer gen.deinit();
 
-            // iterate exported enums
-            // do this first in case target lang needs enums defined before use
             inline for (self.decls) |decl| {
-                if (@typeInfo(S) == .Type) {
-                    const T = S;
-                    const info = @typeInfo(T);
-                    if (info == .Enum) {
-                        const layout = info.Enum.layout;
-                        if (layout == .Extern) {
-                            gen.gen_enum(decl.name, info.Enum);
-                        }
-                    }
+                comptime var info = @typeInfo(@TypeOf(@field(S, decl.name)));
+                if (info == .Type) {
+                    info = @typeInfo(@field(S, decl.name));
                 }
-            }
-
-            // iterate exported structs
-            inline for (self.decls) |decl| {
-                if (@typeInfo(S) == .Type) {
-                    const T = S;
-                    const info = @typeInfo(T);
-                    if (info == .Struct) {
+                // iterate exported fns
+                switch (info) {
+                    .Fn => {
+                        const func = info.Fn;
+                        gen.gen_func(decl.name, func, false);
+                        // iterate exported structs
+                    },
+                    .Struct => {
                         const layout = info.Struct.layout;
                         if (layout == .Extern or layout == .Packed) {
                             gen.gen_struct(decl.name, info.Struct);
                         }
-                    }
-                }
-            }
-
-            inline for (self.decls) |decl| {
-                if (@typeInfo(S) == .Type) {
-                    const T = decl.data.Type;
-                    const info = @typeInfo(T);
-                    if (info == .Union) {
+                    },
+                    .Union => {
                         const layout = info.Union.layout;
                         if (layout == .Extern) {
                             gen.gen_union(decl.name, info.Union);
                         }
-                    }
-                }
-            }
-
-            // iterate exported fns
-            inline for (self.decls) |decl| {
-                const declType = @typeInfo(@TypeOf(@field(S, decl.name)));
-                if (declType == .Fn) {
-                    const func = declType.Fn;
-                    gen.gen_func(decl.name, func);
-                } else if (@typeInfo(S) == .Type) {
-                    const fn_meta = @typeInfo(decl.data.Type);
-
-                    if (fn_meta == .Fn) {
-                        gen.gen_func(decl.name, fn_meta.Fn);
-                    }
+                        // iterate exported enums
+                        // do this first in case target lang needs enums defined before use
+                    },
+                    .Enum => {
+                        gen.gen_enum(decl.name, info.Enum);
+                    },
+                    else => {},
                 }
             }
         }
