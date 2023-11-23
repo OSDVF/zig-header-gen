@@ -17,7 +17,7 @@ pub const Python_Generator = struct {
     const Self = @This();
 
     pub fn init(comptime src_file: []const u8, dst_dir: *Dir) Self {
-        var file = dst_dir.createFile(comptime filebase(src_file) ++ ".py", .{}) catch
+        const file = dst_dir.createFile(comptime filebase(src_file) ++ ".py", .{}) catch
             @panic("Failed to create header file for source: " ++ src_file);
 
         var res = Self{ .file = file };

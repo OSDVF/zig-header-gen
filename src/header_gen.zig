@@ -50,7 +50,7 @@ fn validateGenerator(comptime Generator: type) void {
 }
 
 pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir: []const u8) type {
-    comptime var all_decls: []const Declaration = @typeInfo(S).Struct.decls;
+    const all_decls: []const Declaration = @typeInfo(S).Struct.decls;
 
     return struct {
         decls: @TypeOf(all_decls) = all_decls,

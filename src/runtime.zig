@@ -651,7 +651,7 @@ pub const TypeInfo = union(enum) {
             pub fn uniqueId(comptime T: type) usize {
                 _ = T;
                 comptime {
-                    var id = uniqueIdCounter;
+                    const id = uniqueIdCounter;
 
                     uniqueIdCounter += 1;
 
@@ -845,32 +845,32 @@ const talloc = std.testing.allocator;
 // TODO .Type
 
 test "Runtime TypeInfo.Void" {
-    var info_void = TypeInfo.init(void);
+    const info_void = TypeInfo.init(void);
     try expect(info_void == .Void);
 }
 
 test "Runtime TypeInfo.Bool" {
-    var info_bool = TypeInfo.init(bool);
+    const info_bool = TypeInfo.init(bool);
     try expect(info_bool == .Bool);
 }
 
 // TODO .NoReturn
 
 test "Runtime TypeInfo.Int" {
-    var info_i32 = TypeInfo.init(i32);
+    const info_i32 = TypeInfo.init(i32);
     try expect(info_i32 == .Int);
     try expectEqual(@as(i32, 32), info_i32.Int.bits);
     try expectEqual(true, info_i32.Int.signedness == .signed);
 }
 
 test "Runtime TypeInfo.Float" {
-    var info_f64 = TypeInfo.init(f64);
+    const info_f64 = TypeInfo.init(f64);
     try expect(info_f64 == .Float);
     try expectEqual(@as(i32, 64), info_f64.Float.bits);
 }
 
 test "Runtime TypeInfo.Pointer" {
-    var info_pointer_f64 = TypeInfo.init(*f64);
+    const info_pointer_f64 = TypeInfo.init(*f64);
     try expect(info_pointer_f64 == .Pointer);
     try expectEqual(TypeInfo.Pointer.Size.One, info_pointer_f64.Pointer.size);
     try expectEqual(false, info_pointer_f64.Pointer.is_const);
@@ -879,7 +879,7 @@ test "Runtime TypeInfo.Pointer" {
     try expect(info_pointer_f64.Pointer.child.* == .Float);
     try expectEqual(false, info_pointer_f64.Pointer.is_allowzero);
 
-    var info_pointer_many = TypeInfo.init([*]f64);
+    const info_pointer_many = TypeInfo.init([*]f64);
     try expect(info_pointer_many == .Pointer);
     try expectEqual(TypeInfo.Pointer.Size.Many, info_pointer_many.Pointer.size);
     try expectEqual(false, info_pointer_many.Pointer.is_const);
@@ -890,7 +890,7 @@ test "Runtime TypeInfo.Pointer" {
 }
 
 test "Runtime TypeInfo.Array" {
-    var info_array = TypeInfo.init([2]i32);
+    const info_array = TypeInfo.init([2]i32);
     try expect(info_array == .Array);
     try expectEqual(@as(i32, 2), info_array.Array.len);
     try expect(info_array.Array.child.* == .Int);
@@ -903,7 +903,7 @@ test "Runtime TypeInfo.Struct" {
         pub fn bar() void {}
     };
 
-    var info_struct = TypeInfo.init(FooStruct);
+    const info_struct = TypeInfo.init(FooStruct);
     try expect(info_struct == .Struct);
     try expect(info_struct.Struct.layout == .Auto);
     try expectEqual(@as(usize, 1), info_struct.Struct.fields.len);
@@ -912,12 +912,12 @@ test "Runtime TypeInfo.Struct" {
 }
 
 test "Runtime TypeInfo.ComptimeFloat" {
-    var info_comptime_float = TypeInfo.init(comptime_float);
+    const info_comptime_float = TypeInfo.init(comptime_float);
     try expect(info_comptime_float == .ComptimeFloat);
 }
 
 test "Runtime TypeInfo.ComptimeInt" {
-    var info_comptime_int = TypeInfo.init(comptime_int);
+    const info_comptime_int = TypeInfo.init(comptime_int);
     try expect(info_comptime_int == .ComptimeInt);
 }
 
@@ -925,7 +925,7 @@ test "Runtime TypeInfo.ComptimeInt" {
 // // TODO .Null
 
 test "Runtime TypeInfo.Optional" {
-    var info_optional = TypeInfo.init(?i32);
+    const info_optional = TypeInfo.init(?i32);
     try expect(info_optional == .Optional);
     try expect(info_optional.Optional.child.* == .Int);
 }
@@ -936,26 +936,26 @@ test "Runtime TypeInfo.Optional" {
 test "Runtime TypeInfo.Enum" {
     const FooEnum = enum { Foo, Bar };
 
-    var info_enum = TypeInfo.init(FooEnum);
+    const info_enum = TypeInfo.init(FooEnum);
     try expect(info_enum == .Enum);
 }
 
 test "Runtime TypeInfo.Union" {
     const FooUnion = union { Foo: void, Bar: i32 };
 
-    var info_union = TypeInfo.init(FooUnion);
+    const info_union = TypeInfo.init(FooUnion);
     try expect(info_union == .Union);
 }
 
 test "Runtime TypeInfo.Fn" {
     // .Fn
-    var info_fn = TypeInfo.init(fn () void);
+    const info_fn = TypeInfo.init(fn () void);
     try expect(info_fn == .Fn);
 }
 
 test "Runtime TypeInfo.Struct declarations" {
     // .Fn
-    var info_fn = TypeInfo.init(struct {
+    const info_fn = TypeInfo.init(struct {
         const WackType = packed struct { mr_field: *LameType, ola: u8 };
 
         const LameType = struct {

@@ -20,7 +20,7 @@ pub fn C_Generator(comptime lang: Language) type {
         const Self = @This();
 
         pub fn init(comptime src_file: []const u8, dst_dir: *Dir) Self {
-            var file = dst_dir.createFile(comptime filebase(src_file) ++ if (lang == .C) ".h" else ".hpp", .{}) catch
+            const file = dst_dir.createFile(comptime filebase(src_file) ++ if (lang == .C) ".h" else ".hpp", .{}) catch
                 @panic("Failed to create header file for source: " ++ src_file);
 
             var res = Self{ .file = file, .currently_inside_args = false };
@@ -210,7 +210,7 @@ pub fn C_Generator(comptime lang: Language) type {
                         else => {
                             const fully_qualified = @typeName(T);
                             var iterator = std.mem.splitBackwardsScalar(u8, fully_qualified, '.');
-                            var name = iterator.next().?;
+                            const name = iterator.next().?;
                             if (meta == .Struct) {
                                 if (self.currently_inside_args) {
                                     self.write("struct ");
