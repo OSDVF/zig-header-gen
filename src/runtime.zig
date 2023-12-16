@@ -206,7 +206,7 @@ pub const TypeInfo = union(enum) {
                 .fields = fields: {
                     comptime var arr: [m.fields.len]StructField = undefined;
 
-                    inline for (m.fields, 0..) |f, i| {
+                    for (m.fields, 0..) |f, i| {
                         arr[i] = StructField.init(f);
                     }
 
@@ -215,7 +215,7 @@ pub const TypeInfo = union(enum) {
                 .decls = decls: {
                     comptime var arr: [m.decls.len]Declaration = undefined;
 
-                    inline for (m.decls, 0..) |f, i| {
+                    for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
                     }
 
@@ -341,7 +341,7 @@ pub const TypeInfo = union(enum) {
                 .fields = fields: {
                     comptime var arr: [m.fields.len]EnumField = undefined;
 
-                    inline for (m.fields, 0..) |f, i| {
+                    for (m.fields, 0..) |f, i| {
                         arr[i] = EnumField.init(f);
                     }
 
@@ -350,7 +350,7 @@ pub const TypeInfo = union(enum) {
                 .decls = decls: {
                     comptime var arr: [m.decls.len]Declaration = undefined;
 
-                    inline for (m.decls, 0..) |f, i| {
+                    for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
                     }
 
@@ -427,7 +427,7 @@ pub const TypeInfo = union(enum) {
                 .fields = fields: {
                     comptime var arr: [m.fields.len]UnionField = undefined;
 
-                    inline for (m.fields, 0..) |f, i| {
+                    for (m.fields, 0..) |f, i| {
                         arr[i] = UnionField.init(f);
                     }
 
@@ -436,7 +436,7 @@ pub const TypeInfo = union(enum) {
                 .decls = decls: {
                     comptime var arr: [m.decls.len]Declaration = undefined;
 
-                    inline for (m.decls, 0..) |f, i| {
+                    for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
                     }
 
@@ -510,7 +510,7 @@ pub const TypeInfo = union(enum) {
                 .args = args: {
                     comptime var arr: [m.args.len]Param = undefined;
 
-                    inline for (m.args, 0..) |f, i| {
+                    for (m.args, 0..) |f, i| {
                         arr[i] = Param.init(f);
                     }
 
@@ -543,7 +543,7 @@ pub const TypeInfo = union(enum) {
                 .decls = decls: {
                     comptime var arr: [m.decls.len]Declaration = undefined;
 
-                    inline for (m.decls, 0..) |f, i| {
+                    for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
                     }
 
@@ -705,7 +705,7 @@ pub const TypeInfo = union(enum) {
 
                     comptime var arr: [m.?.len]Error = undefined;
 
-                    inline for (m.?, 0..) |f, i| {
+                    for (m.?, 0..) |f, i| {
                         arr[i] = .{
                             .name = f.name,
                         };
