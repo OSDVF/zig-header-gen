@@ -204,7 +204,7 @@ pub const TypeInfo = union(enum) {
                 .name = name,
                 .layout = @as(TypeInfo.ContainerLayout, @enumFromInt(@intFromEnum(m.layout))),
                 .fields = fields: {
-                    comptime var arr: [m.fields.len]StructField = undefined;
+                    var arr: [m.fields.len]StructField = undefined;
 
                     for (m.fields, 0..) |f, i| {
                         arr[i] = StructField.init(f);
@@ -213,7 +213,7 @@ pub const TypeInfo = union(enum) {
                     break :fields &arr;
                 },
                 .decls = decls: {
-                    comptime var arr: [m.decls.len]Declaration = undefined;
+                    var arr: [m.decls.len]Declaration = undefined;
 
                     for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
@@ -339,7 +339,7 @@ pub const TypeInfo = union(enum) {
                 .layout = @as(TypeInfo.ContainerLayout, @enumFromInt(@intFromEnum(m.layout))),
                 .tag_type = &TypeInfo.init(m.tag_type),
                 .fields = fields: {
-                    comptime var arr: [m.fields.len]EnumField = undefined;
+                    var arr: [m.fields.len]EnumField = undefined;
 
                     for (m.fields, 0..) |f, i| {
                         arr[i] = EnumField.init(f);
@@ -348,7 +348,7 @@ pub const TypeInfo = union(enum) {
                     break :fields &arr;
                 },
                 .decls = decls: {
-                    comptime var arr: [m.decls.len]Declaration = undefined;
+                    var arr: [m.decls.len]Declaration = undefined;
 
                     for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
@@ -425,7 +425,7 @@ pub const TypeInfo = union(enum) {
                 .layout = @as(TypeInfo.ContainerLayout, @enumFromInt(@intFromEnum(m.layout))),
                 .tag_type = if (m.tag_type) |t| &TypeInfo.init(t) else null,
                 .fields = fields: {
-                    comptime var arr: [m.fields.len]UnionField = undefined;
+                    var arr: [m.fields.len]UnionField = undefined;
 
                     for (m.fields, 0..) |f, i| {
                         arr[i] = UnionField.init(f);
@@ -434,7 +434,7 @@ pub const TypeInfo = union(enum) {
                     break :fields &arr;
                 },
                 .decls = decls: {
-                    comptime var arr: [m.decls.len]Declaration = undefined;
+                    var arr: [m.decls.len]Declaration = undefined;
 
                     for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
@@ -508,7 +508,7 @@ pub const TypeInfo = union(enum) {
                 .is_var_args = m.is_var_args,
                 .return_type = if (m.return_type) |t| &TypeInfo.init(t) else null,
                 .args = args: {
-                    comptime var arr: [m.args.len]Param = undefined;
+                    var arr: [m.args.len]Param = undefined;
 
                     for (m.args, 0..) |f, i| {
                         arr[i] = Param.init(f);
@@ -541,7 +541,7 @@ pub const TypeInfo = union(enum) {
         pub fn init(comptime m: std.builtin.Type.Opaque) Opaque {
             return comptime .{
                 .decls = decls: {
-                    comptime var arr: [m.decls.len]Declaration = undefined;
+                    var arr: [m.decls.len]Declaration = undefined;
 
                     for (m.decls, 0..) |f, i| {
                         arr[i] = Declaration.init(f);
@@ -703,7 +703,7 @@ pub const TypeInfo = union(enum) {
                 .ErrorSet = errorset: {
                     if (m == null) return null;
 
-                    comptime var arr: [m.?.len]Error = undefined;
+                    var arr: [m.?.len]Error = undefined;
 
                     for (m.?, 0..) |f, i| {
                         arr[i] = .{

@@ -83,7 +83,7 @@ pub fn C_Generator(comptime lang: Language) type {
         pub fn gen_struct(self: *Self, comptime name: []const u8, comptime meta: StructMeta) void {
             self.write("typedef struct ");
 
-            if (meta.layout == .Packed)
+            if (meta.layout == .@"packed")
                 self.write("__attribute__((__packed__)) ");
 
             self.write(name ++ " {\n");

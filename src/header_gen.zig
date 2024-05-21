@@ -91,13 +91,13 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir
                     },
                     .Struct => {
                         const layout = info.Struct.layout;
-                        if (layout == .Extern or layout == .Packed) {
+                        if (layout == .@"extern" or layout == .@"packed") {
                             gen.gen_struct(decl.name, info.Struct);
                         }
                     },
                     .Union => {
                         const layout = info.Union.layout;
-                        if (layout == .Extern) {
+                        if (layout == .@"extern") {
                             gen.gen_union(decl.name, info.Union);
                         }
                         // iterate exported enums
