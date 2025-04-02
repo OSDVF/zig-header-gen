@@ -24,9 +24,9 @@ fn includeSymbol(comptime decl: Declaration) bool {
         const info = @typeInfo(T);
 
         return switch (info) {
-            .Struct => |s| s.layout == .Extern or s.layout == .Packed,
-            .Union => |u| u.layout == .Extern,
-            .Enum => |e| e.layout == .Extern,
+            .@"struct" => |s| s.layout == .Extern or s.layout == .Packed,
+            .@"union" => |u| u.layout == .Extern,
+            .@"enum" => |e| e.layout == .Extern,
             else => false,
         };
     }
@@ -36,7 +36,7 @@ fn includeSymbol(comptime decl: Declaration) bool {
 
 fn validateGenerator(comptime Generator: type) void {
     comptime {
-        const interface = @typeInfo(GeneratorInterface).Struct.decls;
+        const interface = @typeInfo(GeneratorInterface).@"struct".decls;
 
         for (interface) |decl| {
             if (@hasDecl(Generator, decl.name) == false) {
@@ -50,7 +50,7 @@ fn validateGenerator(comptime Generator: type) void {
 }
 
 pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir: []const u8) type {
-    const all_decls: []const Declaration = @typeInfo(S).Struct.decls;
+    const all_decls: []const Declaration = @typeInfo(S).@"struct".decls;
 
     return struct {
         decls: @TypeOf(all_decls) = all_decls,
@@ -79,32 +79,32 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir
 
             inline for (self.decls) |decl| {
                 comptime var info = @typeInfo(@TypeOf(@field(S, decl.name)));
-                if (info == .Type) {
+                if (info == .type) {
                     info = @typeInfo(@field(S, decl.name));
                 }
                 // iterate exported fns
                 switch (info) {
-                    .Fn => {
-                        const func = info.Fn;
+                    .@"fn" => {
+                        const func = info.@"fn";
                         gen.gen_func(decl.name, func, false);
                         // iterate exported structs
                     },
-                    .Struct => {
-                        const layout = info.Struct.layout;
+                    .@"struct" => {
+                        const layout = info.@"struct".layout;
                         if (layout == .@"extern" or layout == .@"packed") {
-                            gen.gen_struct(decl.name, info.Struct);
+                            gen.gen_struct(decl.name, info.@"struct");
                         }
                     },
-                    .Union => {
-                        const layout = info.Union.layout;
+                    .@"union" => {
+                        const layout = info.@"union".layout;
                         if (layout == .@"extern") {
-                            gen.gen_union(decl.name, info.Union);
+                            gen.gen_union(decl.name, info.@"union");
                         }
                         // iterate exported enums
                         // do this first in case target lang needs enums defined before use
                     },
-                    .Enum => {
-                        gen.gen_enum(decl.name, info.Enum);
+                    .@"enum" => {
+                        gen.gen_enum(decl.name, info.@"enum");
                     },
                     else => {},
                 }

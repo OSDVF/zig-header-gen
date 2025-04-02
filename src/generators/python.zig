@@ -3,10 +3,10 @@ const Dir = std.fs.Dir;
 const warn = std.debug.print;
 const rt = @import("../runtime.zig");
 const FnDecl = rt.TypeInfo.Declaration.Data.FnDecl;
-const FnMeta = rt.TypeInfo.Fn;
-const StructMeta = rt.TypeInfo.Struct;
-const EnumMeta = rt.TypeInfo.Enum;
-const UnionMeta = rt.TypeInfo.Union;
+const FnMeta = rt.TypeInfo.@"fn";
+const StructMeta = rt.TypeInfo.@"struct";
+const EnumMeta = rt.TypeInfo.@"enum";
+const UnionMeta = rt.TypeInfo.@"union";
 const SymbolPhase = @import("ordered.zig").SymbolPhase;
 
 pub const Python_Generator = struct {
@@ -134,7 +134,7 @@ pub const Python_Generator = struct {
 
     pub fn gen_union(self: *Self, name: []const u8, meta: UnionMeta, phase: SymbolPhase) void {
         if (phase != .Body) {
-            self.print("class {s}(ctypes.Union):\n", .{name});
+            self.print("class {s}(ctypes.union):\n", .{name});
         }
 
         if (phase != .Signature) {
@@ -149,16 +149,16 @@ pub const Python_Generator = struct {
     fn writeType(self: *Self, meta: rt.TypeInfo) void {
         switch (meta) {
             .Void => self.write("None"),
-            .Bool => self.write("ctypes.c_bool"),
+            .bool => self.write("ctypes.c_bool"),
             // .usize => self.writeCtype("c_usize"), // TODO
             // .isize => self.writeCtype("c_isize"), // TODO
-            .Int => |i| {
+            .int => |i| {
                 switch (i.signedness == .signed) {
                     true => self.print("ctypes.c_int{}", .{i.bits}),
                     false => self.print("ctypes.c_uint{}", .{i.bits}),
                 }
             },
-            .Float => |f| {
+            .float => |f| {
                 switch (f.bits) {
                     32 => self.write("c_float"),
                     64 => self.write("c_double"),
@@ -166,21 +166,21 @@ pub const Python_Generator = struct {
                     else => self.print("ctypes.c_f{}", .{f.bits}),
                 }
             },
-            .Struct => |s| self.write(s.name orelse "__unknown__"),
-            .Union => |s| self.write(s.name orelse "__unknown__"),
-            .Enum => |s| self.write(s.name orelse "__unknown__"),
-            .Pointer => |p| {
+            .@"struct" => |s| self.write(s.name orelse "__unknown__"),
+            .@"union" => |s| self.write(s.name orelse "__unknown__"),
+            .@"enum" => |s| self.write(s.name orelse "__unknown__"),
+            .pointer => |p| {
                 const childmeta = p.child.*;
                 self.writeCtype("POINTER(");
-                if (childmeta == .Struct and childmeta.Struct.layout != .Extern) {
+                if (childmeta == .@"struct" and childmeta.@"struct".layout != .Extern) {
                     self.writeCtype("c_size_t");
                 } else {
                     self.writeType(childmeta);
                 }
                 self.write(")");
             },
-            .Optional => self.writeType(meta.Optional.child.*),
-            .Array => |a| {
+            .optional => self.writeType(meta.optional.child.*),
+            .array => |a| {
                 self.writeType(a.child.*);
                 self.print(" * {}", .{a.len});
             },

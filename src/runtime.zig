@@ -9,31 +9,31 @@ const TypeInfoSingleton = struct {
 };
 
 pub const TypeInfo = union(enum) {
-    Type: void,
-    Void: void,
-    Bool: void,
-    NoReturn: void,
-    Int: Int,
-    Float: Float,
-    Pointer: Pointer,
-    Array: Array,
-    Struct: Struct,
-    ComptimeFloat: void,
-    ComptimeInt: void,
-    Undefined: void,
-    Null: void,
-    Optional: Optional,
-    ErrorUnion: ErrorUnion,
-    ErrorSet: ErrorSet,
-    Enum: Enum,
-    Union: Union,
-    Fn: Fn,
-    BoundFn: Fn,
-    Opaque: void, // TODO Opaque
-    Frame: Frame,
-    AnyFrame: AnyFrame,
-    Vector: Vector,
-    EnumLiteral: void,
+    type: void,
+    void: void,
+    bool: void,
+    no_return: void,
+    int: Int,
+    float: Float,
+    pointer: Pointer,
+    array: Array,
+    @"struct": Struct,
+    comptime_float: void,
+    comptime_int: void,
+    undefined: void,
+    null: void,
+    optional: Optional,
+    error_union: ErrorUnion,
+    error_set: ErrorSet,
+    @"enum": Enum,
+    @"union": Union,
+    @"fn": Fn,
+    bound_fn: Fn,
+    @"opaque": void, // TODO Opaque
+    frame: Frame,
+    any_frame: AnyFrame,
+    vector: Vector,
+    enum_literal: void,
 
     /// This data structure is used by the Zig language code generation and
     /// therefore must be kept in sync with the compiler implementation.
@@ -41,7 +41,7 @@ pub const TypeInfo = union(enum) {
         signedness: Signedness,
         bits: i32,
 
-        pub fn init(comptime m: std.builtin.Type.Int) Int {
+        pub fn init(comptime m: std.builtin.Type.int) Int {
             return comptime .{
                 .signedness = @as(Signedness, @enumFromInt(@intFromEnum(m.signedness))),
                 .bits = m.bits,
@@ -49,7 +49,7 @@ pub const TypeInfo = union(enum) {
         }
     };
     comptime {
-        validateSymbolInSync(Int, std.builtin.Type.Int, .{});
+        validateSymbolInSync(Int, std.builtin.Type.int, .{});
     }
 
     /// This data structure is used by the Zig language code generation and
@@ -57,14 +57,14 @@ pub const TypeInfo = union(enum) {
     pub const Float = struct {
         bits: i32,
 
-        pub fn init(comptime m: std.builtin.Type.Float) Float {
+        pub fn init(comptime m: std.builtin.Type.float) Float {
             return comptime .{
                 .bits = m.bits,
             };
         }
     };
     comptime {
-        validateSymbolInSync(Float, std.builtin.Type.Float, .{});
+        validateSymbolInSync(Float, std.builtin.Type.float, .{});
     }
 
     /// This data structure is used by the Zig language code generation and
@@ -93,7 +93,7 @@ pub const TypeInfo = union(enum) {
 
         pub fn init(comptime m: std.builtin.Type.Pointer) Pointer {
             return comptime .{
-                .size = @as(TypeInfo.Pointer.Size, @enumFromInt(@intFromEnum(m.size))),
+                .size = @as(TypeInfo.pointer.Size, @enumFromInt(@intFromEnum(m.size))),
                 .is_const = m.is_const,
                 .is_volatile = m.is_volatile,
                 .alignment = m.alignment,
@@ -124,7 +124,7 @@ pub const TypeInfo = union(enum) {
         /// the value of the `child` field in this struct. However there is no way
         /// to refer to that type here, so we use `var`.
         // sentinel: anytype,
-        pub fn init(comptime m: std.builtin.Type.Array) Array {
+        pub fn init(comptime m: std.builtin.Type.array) Array {
             return comptime .{
                 .len = m.len,
                 .child = &TypeInfo.init(m.child),
@@ -138,7 +138,7 @@ pub const TypeInfo = union(enum) {
         }
     };
     comptime {
-        validateSymbolInSync(Array, std.builtin.Type.Array, .{
+        validateSymbolInSync(Array, std.builtin.Type.array, .{
             .ignore_fields = .{"sentinel"},
         });
     }
@@ -242,7 +242,7 @@ pub const TypeInfo = union(enum) {
     pub const Optional = struct {
         child: *const TypeInfo,
 
-        pub fn init(comptime m: std.builtin.Type.Optional) Optional {
+        pub fn init(comptime m: std.builtin.Type.optional) Optional {
             return comptime .{
                 .child = &TypeInfo.init(m.child),
             };
@@ -255,7 +255,7 @@ pub const TypeInfo = union(enum) {
         }
     };
     comptime {
-        validateSymbolInSync(Optional, std.builtin.Type.Optional, .{});
+        validateSymbolInSync(Optional, std.builtin.Type.optional, .{});
     }
 
     /// This data structure is used by the Zig language code generation and
@@ -686,21 +686,21 @@ pub const TypeInfo = union(enum) {
         ptr.info = comptime switch (info) {
             .Type => .{ .Type = {} },
             .Void => .{ .Void = {} },
-            .Bool => .{ .Bool = {} },
+            .bool => .{ .bool = {} },
             .NoReturn => .{ .NoReturn = {} },
-            .Int => |m| .{ .Int = Int.init(m) },
-            .Float => |m| .{ .Float = Float.init(m) },
-            .Pointer => |m| .{ .Pointer = Pointer.init(m) },
-            .Array => |m| .{ .Array = Array.init(m) },
-            .Struct => |m| .{ .Struct = Struct.init(m, @typeName(T)) },
+            .int => |m| .{ .int = Int.init(m) },
+            .float => |m| .{ .float = Float.init(m) },
+            .pointer => |m| .{ .pointer = Pointer.init(m) },
+            .array => |m| .{ .array = Array.init(m) },
+            .@"struct" => |m| .{ .@"struct" = Struct.init(m, @typeName(T)) },
             .ComptimeFloat => .{ .ComptimeFloat = {} },
-            .ComptimeInt => .{ .ComptimeInt = {} },
+            .comptime_int => .{ .comptime_int = {} },
             .Undefined => .{ .Undefined = {} },
             .Null => .{ .Null = {} },
-            .Optional => |m| .{ .Optional = Optional.init(m) },
-            .ErrorUnion => |m| .{ .ErrorUnion = ErrorUnion.init(m) }, // TODO
-            .ErrorSet => |m| .{
-                .ErrorSet = errorset: {
+            .optional => |m| .{ .optional = Optional.init(m) },
+            .error_union => |m| .{ .error_union = ErrorUnion.init(m) }, // TODO
+            .error_set => |m| .{
+                .error_set = errorset: {
                     if (m == null) return null;
 
                     var arr: [m.?.len]Error = undefined;
@@ -714,9 +714,9 @@ pub const TypeInfo = union(enum) {
                     break :errorset &arr;
                 },
             },
-            .Enum => |m| .{ .Enum = Enum.init(m, @typeName(T)) },
-            .Union => |m| .{ .Union = Union.init(m, @typeName(T)) },
-            .Fn => |m| .{ .Fn = Fn.init(m) },
+            .@"enum" => |m| .{ .@"enum" = Enum.init(m, @typeName(T)) },
+            .@"union" => |m| .{ .@"union" = Union.init(m, @typeName(T)) },
+            .@"fn" => |m| .{ .@"fn" = Fn.init(m) },
             .BoundFn => |m| .{ .BoundedFn = Fn.init(m) },
             .Opaque => .{ .Opaque = {} },
             .Frame => .{ .Frame = {} }, // TODO
@@ -730,15 +730,15 @@ pub const TypeInfo = union(enum) {
 
     pub fn deinit(self: *TypeInfo, allocator: Allocator) void {
         switch (self.*) {
-            .Array => |a| a.deinit(allocator),
-            .Pointer => |p| p.deinit(allocator),
-            .Struct => |s| s.deinit(allocator),
-            .Union => |u| u.deinit(allocator),
-            .Enum => |e| e.deinit(allocator),
-            .Optional => |o| o.deinit(allocator),
-            .Fn => |f| f.deinit(allocator),
-            .ErrorUnion => |e| e.deinit(allocator),
-            .ErrorSet => |maybe_set| {
+            .array => |a| a.deinit(allocator),
+            .pointer => |p| p.deinit(allocator),
+            .@"struct" => |s| s.deinit(allocator),
+            .@"union" => |u| u.deinit(allocator),
+            .@"enum" => |e| e.deinit(allocator),
+            .optional => |o| o.deinit(allocator),
+            .@"fn" => |f| f.deinit(allocator),
+            .error_union => |e| e.deinit(allocator),
+            .error_set => |maybe_set| {
                 if (maybe_set) |set| {
                     for (set) |err| err.deinit(allocator);
 
@@ -802,7 +802,7 @@ pub fn validateSymbolInSync(comptime runtime_type: type, comptime builtin_type: 
     }
 
     switch (builtin_type_info) {
-        .Struct, .Enum, .Union => {
+        .@"struct", .@"enum", .@"union" => {
             // Compare the fields
             inline for (std.meta.fields(builtin_type)) |builtin_field| {
                 var missing_field: bool = false;
@@ -851,49 +851,49 @@ test "Runtime TypeInfo.Void" {
 
 test "Runtime TypeInfo.Bool" {
     const info_bool = TypeInfo.init(bool);
-    try expect(info_bool == .Bool);
+    try expect(info_bool == .bool);
 }
 
 // TODO .NoReturn
 
 test "Runtime TypeInfo.Int" {
     const info_i32 = TypeInfo.init(i32);
-    try expect(info_i32 == .Int);
-    try expectEqual(@as(i32, 32), info_i32.Int.bits);
-    try expectEqual(true, info_i32.Int.signedness == .signed);
+    try expect(info_i32 == .int);
+    try expectEqual(@as(i32, 32), info_i32.int.bits);
+    try expectEqual(true, info_i32.int.signedness == .signed);
 }
 
 test "Runtime TypeInfo.Float" {
     const info_f64 = TypeInfo.init(f64);
-    try expect(info_f64 == .Float);
-    try expectEqual(@as(i32, 64), info_f64.Float.bits);
+    try expect(info_f64 == .float);
+    try expectEqual(@as(i32, 64), info_f64.float.bits);
 }
 
-test "Runtime TypeInfo.Pointer" {
+test "Runtime TypeInfo.pointer" {
     const info_pointer_f64 = TypeInfo.init(*f64);
-    try expect(info_pointer_f64 == .Pointer);
-    try expectEqual(TypeInfo.Pointer.Size.One, info_pointer_f64.Pointer.size);
-    try expectEqual(false, info_pointer_f64.Pointer.is_const);
-    try expectEqual(false, info_pointer_f64.Pointer.is_volatile);
-    try expectEqual(@as(i32, 8), info_pointer_f64.Pointer.alignment);
-    try expect(info_pointer_f64.Pointer.child.* == .Float);
-    try expectEqual(false, info_pointer_f64.Pointer.is_allowzero);
+    try expect(info_pointer_f64 == .pointer);
+    try expectEqual(TypeInfo.pointer.Size.One, info_pointer_f64.pointer.size);
+    try expectEqual(false, info_pointer_f64.pointer.is_const);
+    try expectEqual(false, info_pointer_f64.pointer.is_volatile);
+    try expectEqual(@as(i32, 8), info_pointer_f64.pointer.alignment);
+    try expect(info_pointer_f64.pointer.child.* == .float);
+    try expectEqual(false, info_pointer_f64.pointer.is_allowzero);
 
     const info_pointer_many = TypeInfo.init([*]f64);
-    try expect(info_pointer_many == .Pointer);
-    try expectEqual(TypeInfo.Pointer.Size.Many, info_pointer_many.Pointer.size);
-    try expectEqual(false, info_pointer_many.Pointer.is_const);
-    try expectEqual(false, info_pointer_many.Pointer.is_volatile);
-    try expectEqual(@as(i32, 8), info_pointer_many.Pointer.alignment);
-    try expect(info_pointer_many.Pointer.child.* == .Float);
-    try expectEqual(false, info_pointer_many.Pointer.is_allowzero);
+    try expect(info_pointer_many == .pointer);
+    try expectEqual(TypeInfo.pointer.Size.Many, info_pointer_many.pointer.size);
+    try expectEqual(false, info_pointer_many.pointer.is_const);
+    try expectEqual(false, info_pointer_many.pointer.is_volatile);
+    try expectEqual(@as(i32, 8), info_pointer_many.pointer.alignment);
+    try expect(info_pointer_many.pointer.child.* == .float);
+    try expectEqual(false, info_pointer_many.pointer.is_allowzero);
 }
 
-test "Runtime TypeInfo.Array" {
+test "Runtime TypeInfo.array" {
     const info_array = TypeInfo.init([2]i32);
-    try expect(info_array == .Array);
-    try expectEqual(@as(i32, 2), info_array.Array.len);
-    try expect(info_array.Array.child.* == .Int);
+    try expect(info_array == .array);
+    try expectEqual(@as(i32, 2), info_array.array.len);
+    try expect(info_array.array.child.* == .int);
 }
 
 test "Runtime TypeInfo.Struct" {
@@ -904,11 +904,11 @@ test "Runtime TypeInfo.Struct" {
     };
 
     const info_struct = TypeInfo.init(FooStruct);
-    try expect(info_struct == .Struct);
-    try expect(info_struct.Struct.layout == .Auto);
-    try expectEqual(@as(usize, 1), info_struct.Struct.fields.len);
-    try expectEqualStrings("int", info_struct.Struct.fields[0].name);
-    try expect(info_struct.Struct.fields[0].field_type.* == .Int);
+    try expect(info_struct == .@"struct");
+    try expect(info_struct.@"struct".layout == .Auto);
+    try expectEqual(@as(usize, 1), info_struct.@"struct".fields.len);
+    try expectEqualStrings("int", info_struct.@"struct".fields[0].name);
+    try expect(info_struct.@"struct".fields[0].field_type.* == .int);
 }
 
 test "Runtime TypeInfo.ComptimeFloat" {
@@ -918,43 +918,43 @@ test "Runtime TypeInfo.ComptimeFloat" {
 
 test "Runtime TypeInfo.ComptimeInt" {
     const info_comptime_int = TypeInfo.init(comptime_int);
-    try expect(info_comptime_int == .ComptimeInt);
+    try expect(info_comptime_int == .comptime_int);
 }
 
 // // TODO .Undefined
 // // TODO .Null
 
-test "Runtime TypeInfo.Optional" {
+test "Runtime TypeInfo.optional" {
     const info_optional = TypeInfo.init(?i32);
-    try expect(info_optional == .Optional);
-    try expect(info_optional.Optional.child.* == .Int);
+    try expect(info_optional == .optional);
+    try expect(info_optional.optional.child.* == .int);
 }
 
-// // TODO .ErrorUnion
-// // TODO .ErrorSet
+// // TODO .error_union
+// // TODO .error_set
 
 test "Runtime TypeInfo.Enum" {
     const FooEnum = enum { Foo, Bar };
 
     const info_enum = TypeInfo.init(FooEnum);
-    try expect(info_enum == .Enum);
+    try expect(info_enum == .@"enum");
 }
 
 test "Runtime TypeInfo.Union" {
     const FooUnion = union { Foo: void, Bar: i32 };
 
     const info_union = TypeInfo.init(FooUnion);
-    try expect(info_union == .Union);
+    try expect(info_union == .@"union");
 }
 
 test "Runtime TypeInfo.Fn" {
-    // .Fn
+    // .@"fn"
     const info_fn = TypeInfo.init(fn () void);
-    try expect(info_fn == .Fn);
+    try expect(info_fn == .@"fn");
 }
 
 test "Runtime TypeInfo.Struct declarations" {
-    // .Fn
+    // .@"fn"
     const info_fn = TypeInfo.init(struct {
         const WackType = packed struct { mr_field: *LameType, ola: u8 };
 
@@ -968,7 +968,7 @@ test "Runtime TypeInfo.Struct declarations" {
             return one == 1;
         }
     });
-    try expect(info_fn == .Struct);
+    try expect(info_fn == .@"struct");
 }
 
 // TODO .BoundFn

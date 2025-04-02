@@ -2,7 +2,6 @@ const std = @import("std");
 const StringHashMap = std.StringHashMap;
 const Allocator = std.mem.Allocator;
 const FnMeta = std.builtin.Type.Fn;
-const FnDecl = std.builtin.Type.Declaration.Data.FnDecl;
 const StructMeta = std.builtin.Type.Struct;
 const EnumMeta = std.builtin.Type.Enum;
 const UnionMeta = std.builtin.Type.Union;
@@ -11,17 +10,17 @@ const DepsGraph = @import("../deps_graph.zig").DepsGraph;
 const rt = @import("../runtime.zig");
 
 const SymbolDeclaration = union(enum) {
-    Struct: rt.TypeInfo.Struct,
-    Union: rt.TypeInfo.Union,
-    Enum: rt.TypeInfo.Enum,
-    Fn: rt.TypeInfo.Fn,
+    Struct: rt.TypeInfo.@"struct",
+    Union: rt.TypeInfo.@"union",
+    Enum: rt.TypeInfo.@"enum",
+    Fn: rt.TypeInfo.@"fn",
 
     pub fn deinit(self: SymbolDeclaration, allocator: Allocator) void {
         switch (self) {
-            .Struct => |s| s.deinit(allocator),
-            .Union => |u| u.deinit(allocator),
-            .Enum => |e| e.deinit(allocator),
-            .Fn => |f| f.deinit(allocator),
+            .@"struct" => |s| s.deinit(allocator),
+            .@"union" => |u| u.deinit(allocator),
+            .@"enum" => |e| e.deinit(allocator),
+            .@"fn" => |f| f.deinit(allocator),
         }
     }
 };
@@ -30,9 +29,9 @@ fn isSymbolDependency(comptime symbol_type: type) bool {
     const info = @typeInfo(symbol_type);
 
     return switch (info) {
-        .Struct, .Union, .Enum => true,
-        .Pointer => |p| isSymbolDependency(p.child),
-        .Array => |a| isSymbolDependency(a.child),
+        .@"struct", .@"union", .@"enum" => true,
+        .pointer => |p| isSymbolDependency(p.child),
+        .array => |a| isSymbolDependency(a.child),
         else => false,
     };
 }
@@ -41,8 +40,8 @@ fn getTypeName(comptime T: type) []const u8 {
     const type_info = @typeInfo(T);
 
     return switch (type_info) {
-        .Pointer => |p| getTypeName(p.child),
-        .Array => |p| getTypeName(p.child),
+        .pointer => |p| getTypeName(p.child),
+        .array => |p| getTypeName(p.child),
         else => @typeName(T),
     };
 }
@@ -101,16 +100,16 @@ pub fn Ordered_Generator(comptime Generator: type) type {
 
         fn flush(self: *Self) void {
             while (self.symbols.readEmitted()) |emitted| {
-                const partial = if (emitted.symbol.payload == .Fn) false else emitted.partial;
+                const partial = if (emitted.symbol.payload == .@"fn") false else emitted.partial;
                 _ = partial;
 
                 const phase = self.getNextPhaseFor(emitted.symbol.name, emitted.partial) catch unreachable orelse continue;
 
                 switch (emitted.symbol.payload) {
-                    .Struct => |meta| self.inner_gen.gen_struct(emitted.symbol.name, meta, phase),
-                    .Union => |meta| self.inner_gen.gen_union(emitted.symbol.name, meta, phase),
-                    .Enum => |meta| self.inner_gen.gen_enum(emitted.symbol.name, meta, phase),
-                    .Fn => |meta| self.inner_gen.gen_func(emitted.symbol.name, meta, false),
+                    .@"struct" => |meta| self.inner_gen.gen_struct(emitted.symbol.name, meta, phase),
+                    .@"union" => |meta| self.inner_gen.gen_union(emitted.symbol.name, meta, phase),
+                    .@"enum" => |meta| self.inner_gen.gen_enum(emitted.symbol.name, meta, phase),
+                    .@"fn" => |meta| self.inner_gen.gen_func(emitted.symbol.name, meta, false),
                 }
             }
         }
@@ -118,7 +117,7 @@ pub fn Ordered_Generator(comptime Generator: type) type {
         pub fn gen_func(self: *Self, comptime name: []const u8, comptime meta: FnMeta, is_pointer: bool) void {
             _ = is_pointer;
             const decl: SymbolDeclaration = SymbolDeclaration{
-                .Fn = rt.TypeInfo.Fn.init(meta),
+                .@"fn" = rt.TypeInfo.@"fn".init(meta),
             };
 
             self.symbols.beginSymbol(name, decl) catch |err| @panic(@errorName(err));
@@ -139,7 +138,7 @@ pub fn Ordered_Generator(comptime Generator: type) type {
 
         pub fn gen_struct(self: *Self, comptime name: []const u8, comptime meta: StructMeta) void {
             const decl: SymbolDeclaration = SymbolDeclaration{
-                .Struct = rt.TypeInfo.Struct.init(meta, name),
+                .@"struct" = rt.TypeInfo.@"struct".init(meta, name),
             };
 
             self.symbols.beginSymbol(name, decl) catch |err| @panic(@errorName(err));
@@ -155,7 +154,7 @@ pub fn Ordered_Generator(comptime Generator: type) type {
 
         pub fn gen_enum(self: *Self, comptime name: []const u8, comptime meta: EnumMeta) void {
             const decl: SymbolDeclaration = SymbolDeclaration{
-                .Enum = rt.TypeInfo.Enum.init(meta, name),
+                .@"enum" = rt.TypeInfo.@"enum".init(meta, name),
             };
 
             self.symbols.beginSymbol(name, decl) catch |err| @panic(@errorName(err));
@@ -167,7 +166,7 @@ pub fn Ordered_Generator(comptime Generator: type) type {
 
         pub fn gen_union(self: *Self, comptime name: []const u8, comptime meta: UnionMeta) void {
             const decl: SymbolDeclaration = SymbolDeclaration{
-                .Union = rt.TypeInfo.Union.init(meta, name),
+                .@"union" = rt.TypeInfo.@"union".init(meta, name),
             };
 
             self.symbols.beginSymbol(name, decl) catch |err| @panic(@errorName(err));
