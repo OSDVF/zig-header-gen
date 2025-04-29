@@ -2,6 +2,7 @@ const std = @import("std");
 const Dir = std.fs.Dir;
 const FnMeta = std.builtin.Type.Fn;
 const FnDecl = std.builtin.Type.Declaration;
+const OpaqueMeta = std.builtin.Type.Opaque;
 const StructMeta = std.builtin.Type.Struct;
 const EnumMeta = std.builtin.Type.Enum;
 const UnionMeta = std.builtin.Type.Union;
@@ -16,6 +17,7 @@ pub fn C_Generator(comptime lang: Language) type {
     return struct {
         file: std.fs.File,
         currently_inside_args: bool,
+        names: std.StringArrayHashMapUnmanaged([]const []const u8) = .empty,
 
         const Self = @This();
 
@@ -46,7 +48,15 @@ pub fn C_Generator(comptime lang: Language) type {
             self.file.close();
         }
 
-        pub fn gen_func(self: *Self, comptime name: []const u8, comptime meta: FnMeta, pointer: bool) void {
+        pub fn gen_opaque(self: *Self, comptime name: []const u8) void {
+            self.write("typedef struct ");
+            self.write(name);
+            self.write("* ");
+            self.write(name);
+            self.write("_t;\n");
+        }
+
+        pub fn gen_func(self: *Self, comptime name: []const u8, comptime meta: FnMeta, pointer: bool, names: ?[]const []const u8) void {
             switch (meta.calling_convention) {
                 .naked => self.write("__attribute__((naked)) "),
                 .x86_stdcall => self.write("__attribute__((stdcall)) "),
@@ -59,16 +69,20 @@ pub fn C_Generator(comptime lang: Language) type {
                 if (lang == .Cpp) {
                     self.write("\"C\" ");
                 }
-                self.writeType(meta.return_type.?);
+                self.writeType(meta.return_type.?, null);
                 self.write(" ");
             }
             self.write(name ++ "(");
 
             self.currently_inside_args = true;
             inline for (meta.params, 0..) |arg, i| {
-                self.writeType(arg.type.?);
-                //TODO: Figure out how to get arg names; for now just do arg0..argN
-                _ = self.file.writer().print(" arg{}", .{i}) catch unreachable;
+                self.writeType(arg.type.?, null);
+                if (names) |n| {
+                    self.file.writeAll(" ") catch unreachable;
+                    self.file.writeAll(n[i]) catch unreachable;
+                } else {
+                    self.file.writer().print(" arg{}", .{i}) catch unreachable;
+                }
                 if (i != meta.params.len - 1)
                     self.write(", ");
             }
@@ -104,14 +118,14 @@ pub fn C_Generator(comptime lang: Language) type {
                     }
                 }
                 if (inner == .@"fn") {
-                    self.writeType(inner.@"fn".return_type.?);
+                    self.writeType(inner.@"fn".return_type.?, null);
                     self.write(" (*" ++ field.name ++ ")");
-                    self.writeType(field.type); //writes just arguments
+                    self.writeType(field.type, self.names.get(name ++ "." ++ field.name)); //writes just arguments
                 } else {
                     if (info == .array) {
-                        self.writeType(info.array.child);
+                        self.writeType(info.array.child, null);
                     } else {
-                        self.writeType(field.type);
+                        self.writeType(field.type, null);
                     }
 
                     self.write(" " ++ field.name);
@@ -153,13 +167,13 @@ pub fn C_Generator(comptime lang: Language) type {
 
             inline for (meta.fields) |field| {
                 self.write("   ");
-                self.writeType(field.type);
+                self.writeType(field.type, null);
                 self.write(" " ++ field.name ++ ";\n");
             }
             self.write("} " ++ name ++ "_t;\n\n");
         }
 
-        fn writeType(self: *Self, comptime T: type) void {
+        fn writeType(self: *Self, comptime T: type, argument_names: ?[]const []const u8) void {
             switch (T) {
                 anyopaque => self.write("void"),
                 void => self.write("void"),
@@ -197,30 +211,38 @@ pub fn C_Generator(comptime lang: Language) type {
                                 self.write("*");
                             } else {
                                 if (childmeta == .@"fn") {
-                                    self.writeType(child);
+                                    self.writeType(child, argument_names);
                                 } else {
-                                    self.writeType(child);
-                                    self.write("*");
+                                    self.writeType(child, argument_names);
+                                    if (childmeta != .@"opaque" or child == anyopaque)
+                                        self.write("*");
                                 }
                             }
                         },
-                        .optional => self.writeType(meta.optional.child),
+                        .optional => self.writeType(meta.optional.child, argument_names),
                         .array => @compileError("Handle goofy looking C Arrays in the calling function"),
-                        .@"fn" => gen_func(self, "", meta.@"fn", true),
+                        .@"fn" => gen_func(self, "", meta.@"fn", true, argument_names),
                         else => {
                             const fully_qualified = @typeName(T);
                             var iterator = std.mem.splitBackwardsScalar(u8, fully_qualified, '.');
                             const name = iterator.next().?;
-                            if (meta == .@"struct") {
-                                if (self.currently_inside_args) {
-                                    self.write("struct ");
-                                    self.write(name);
-                                } else {
+                            switch (meta) {
+                                .@"struct" => {
+                                    if (self.currently_inside_args) {
+                                        self.write("struct ");
+                                        self.write(name);
+                                    } else {
+                                        self.write(name);
+                                        self.write("_t");
+                                    }
+                                },
+                                .@"opaque" => {
                                     self.write(name);
                                     self.write("_t");
-                                }
-                            } else {
-                                self.write(name);
+                                },
+                                else => {
+                                    self.write(name);
+                                },
                             }
                         },
                     }

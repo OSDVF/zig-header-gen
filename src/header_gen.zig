@@ -12,6 +12,7 @@ pub const Ordered_Generator = @import("generators/ordered.zig").Ordered_Generato
 const GeneratorInterface = struct {
     fn init() void {}
     fn deinit() void {}
+    fn gen_opaque() void {}
     fn gen_func() void {}
     fn gen_struct() void {}
     fn gen_enum() void {}
@@ -51,10 +52,11 @@ fn validateGenerator(comptime Generator: type) void {
 
 pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir: []const u8) type {
     const all_decls: []const Declaration = @typeInfo(S).@"struct".decls;
+    const source_file: []const u8 = libname ++ ".zig";
 
     return struct {
-        decls: @TypeOf(all_decls) = all_decls,
-        source_file: []const u8 = libname ++ ".zig",
+        /// Maps function names to their argument names
+        names: std.StringArrayHashMapUnmanaged([]const []const u8) = .empty,
 
         const Self = @This();
 
@@ -62,7 +64,7 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir
             return Self{};
         }
 
-        pub fn exec(comptime self: Self, comptime Generator: type) void {
+        pub fn exec(self: Self, comptime Generator: type) void {
             validateGenerator(Generator);
 
             var cwd = std.fs.cwd();
@@ -74,11 +76,15 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir
             var hdr_dir = cwd.openDir(libdir, .{}) catch @panic("Failed to open header dir");
             defer hdr_dir.close();
 
-            var gen = Generator.init(self.source_file, &hdr_dir);
+            var gen = Generator.init(source_file, &hdr_dir);
+            if (@hasField(Generator, "names")) {
+                gen.names = self.names;
+            }
             defer gen.deinit();
 
-            inline for (self.decls) |decl| {
-                comptime var info = @typeInfo(@TypeOf(@field(S, decl.name)));
+            inline for (all_decls) |decl| {
+                const T = @TypeOf(@field(S, decl.name));
+                comptime var info = @typeInfo(T);
                 if (info == .type) {
                     info = @typeInfo(@field(S, decl.name));
                 }
@@ -86,7 +92,7 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir
                 switch (info) {
                     .@"fn" => {
                         const func = info.@"fn";
-                        gen.gen_func(decl.name, func, false);
+                        gen.gen_func(decl.name, func, false, self.names.get(@typeName(S) ++ "." ++ decl.name) orelse self.names.get(decl.name));
                         // iterate exported structs
                     },
                     .@"struct" => {
@@ -105,6 +111,9 @@ pub fn HeaderGen(comptime S: type, comptime libname: []const u8, comptime libdir
                     },
                     .@"enum" => {
                         gen.gen_enum(decl.name, info.@"enum");
+                    },
+                    .@"opaque" => {
+                        gen.gen_opaque(decl.name);
                     },
                     else => {},
                 }
