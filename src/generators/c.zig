@@ -1,12 +1,9 @@
 const std = @import("std");
 const Dir = std.fs.Dir;
 const FnMeta = std.builtin.Type.Fn;
-const FnDecl = std.builtin.Type.Declaration;
-const OpaqueMeta = std.builtin.Type.Opaque;
 const StructMeta = std.builtin.Type.Struct;
 const EnumMeta = std.builtin.Type.Enum;
 const UnionMeta = std.builtin.Type.Union;
-const warn = std.debug.print;
 
 const Language = enum {
     C,
@@ -206,7 +203,7 @@ pub fn C_Generator(comptime lang: Language) type {
                         .pointer => {
                             const child = meta.pointer.child;
                             const childmeta = @typeInfo(child);
-                            if (childmeta == .@"struct" and childmeta.@"struct".layout != .Extern) {
+                            if (childmeta == .@"struct" and childmeta.@"struct".layout != .@"extern") {
                                 self.write("void");
                                 self.write("*");
                             } else {

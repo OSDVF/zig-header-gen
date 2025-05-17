@@ -2,7 +2,6 @@ const std = @import("std");
 const builtin = std.builtin;
 const TypeInfo = builtin.Type;
 const Declaration = TypeInfo.Declaration;
-const warn = std.debug.print;
 
 // Provided generators
 pub const C_Generator = @import("generators/c.zig").C_Generator;
